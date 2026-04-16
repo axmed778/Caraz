@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(pnpm --version)",
+      "Bash(npm install:*)",
+      "Bash(pnpm install:*)",
+      "Bash(node -e \"const { execSync } = require\\('child_process'\\); console.log\\(execSync\\('pnpm --version', { env: { ...process.env, COREPACK_ENABLE_STRICT: '0' } }\\).toString\\(\\)\\)\")",
+      "Bash(COREPACK_ENABLE_STRICT=0 pnpm install)",
+      "Bash(COREPACK_ENABLE_STRICT=0 pnpm --filter @caraz/api build)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(COREPACK_ENABLE_STRICT=0 pnpm --filter @caraz/web build)",
+      "Bash(npm list:*)",
+      "Bash(npx pnpm:*)",
+      "Bash(COREPACK_ENABLE_STRICT=0 pnpm db:push)",
+      "Bash(COREPACK_ENABLE_STRICT=0 pnpm db:seed)",
+      "Bash(tasklist)",
+      "Bash(curl -s http://localhost:4000/api/reference/brands)",
+      "Bash(curl -v http://localhost:4000/api/reference/brands)",
+      "Bash(COREPACK_ENABLE_STRICT=0 pnpm --filter @caraz/api dev)",
+      "Bash(COREPACK_ENABLE_STRICT=0 node dist/main)",
+      "Bash(npx tsc:*)",
+      "Bash(npx nest:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node dist/main.js)",
+      "Bash(npx prisma:*)",
+      "Bash(pnpm --filter @caraz/database generate)",
+      "Bash(pnpm --filter @caraz/api build)",
+      "Bash(taskkill /F /IM node.exe)"
+    ]
+  }
+}

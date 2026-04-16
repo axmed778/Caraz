@@ -1,0 +1,550 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ──────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  DEALER
+  ADMIN
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+  LPG
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+  CVT
+  ROBOT
+}
+
+enum DriveType {
+  FWD
+  RWD
+  AWD
+  FOUR_WD
+}
+
+enum BodyType {
+  SEDAN
+  SUV
+  HATCHBACK
+  COUPE
+  WAGON
+  VAN
+  TRUCK
+  CONVERTIBLE
+  MINIVAN
+  PICKUP
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  DELETED
+  SUSPENDED
+}
+
+enum DelistReason {
+  SOLD
+  DELETED
+  SUSPENDED
+  RELISTED
+  EXPIRED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
+enum MileageSource {
+  LISTING_SUBMISSION
+  LISTING_UPDATE
+  PHOTO_OCR
+  SERVICE_RECORD
+  INSPECTION
+  INSURANCE_RECORD
+  ADMIN_VERIFIED
+}
+
+enum AnomalyType {
+  ROLLBACK_DETECTED
+  IMPLAUSIBLE_DAILY_RATE
+  SOURCE_CONFLICT
+  PHOTO_OCR_MISMATCH
+  JUMP_TOO_LARGE
+}
+
+enum AnomalyResolution {
+  CONFIRMED_FRAUD
+  FALSE_POSITIVE
+  UNRESOLVED
+}
+
+enum FingerprintType {
+  DEVICE_ID
+  IP_SUBNET
+  PHONE_HASH
+  EMAIL_HASH
+}
+
+enum AccountLinkType {
+  SAME_DEVICE
+  SAME_PHONE_PREFIX
+  SAME_IP_RANGE
+  SAME_VIN
+}
+
+// ─── USERS ──────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique @db.VarChar(255)
+  phone         String?  @unique @db.VarChar(20)
+  passwordHash  String   @map("password_hash") @db.VarChar(255)
+  role          UserRole @default(USER)
+  isVerified    Boolean  @default(false) @map("is_verified")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  profile              Profile?
+  dealer               Dealer?
+  listings             Listing[]
+  savedListings        SavedListing[]
+  conversationsAsBuyer  Conversation[] @relation("buyer")
+  conversationsAsSeller Conversation[] @relation("seller")
+  messagesSent         Message[]
+  notifications        Notification[]
+  savedSearches        SavedSearch[]
+  fingerprints         UserFingerprint[]
+  accountLinksA        AccountLink[]  @relation("linkA")
+  accountLinksB        AccountLink[]  @relation("linkB")
+  refreshTokens        RefreshToken[]
+
+  @@map("users")
+}
+
+model Profile {
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @unique @map("user_id") @db.Uuid
+  firstName String? @map("first_name") @db.VarChar(100)
+  lastName  String? @map("last_name") @db.VarChar(100)
+  avatarUrl String? @map("avatar_url") @db.VarChar(500)
+  cityId    Int?    @map("city_id")
+  bio       String? @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city City? @relation(fields: [cityId], references: [id])
+
+  @@map("profiles")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.VarChar(500)
+  device    String?  @db.VarChar(200)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz()
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ─── DEALERS ────────────────────────────────────────────────
+
+model Dealer {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  name        String   @db.VarChar(200)
+  logoUrl     String?  @map("logo_url") @db.VarChar(500)
+  description String?  @db.Text
+  address     String?  @db.VarChar(500)
+  cityId      Int?     @map("city_id")
+  phone       String?  @db.VarChar(20)
+  website     String?  @db.VarChar(300)
+  isVerified  Boolean  @default(false) @map("is_verified")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city     City?     @relation(fields: [cityId], references: [id])
+  listings Listing[]
+
+  @@map("dealers")
+}
+
+// ─── REFERENCE DATA ─────────────────────────────────────────
+
+model Brand {
+  id      Int     @id @default(autoincrement())
+  name    String  @db.VarChar(100)
+  slug    String  @unique @db.VarChar(100)
+  logoUrl String? @map("logo_url") @db.VarChar(300)
+
+  models   Model[]
+  listings Listing[]
+
+  @@map("brands")
+}
+
+model Model {
+  id      Int    @id @default(autoincrement())
+  brandId Int    @map("brand_id")
+  name    String @db.VarChar(100)
+  slug    String @db.VarChar(100)
+
+  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  listings Listing[]
+
+  @@unique([brandId, slug])
+  @@map("models")
+}
+
+model City {
+  id       Int     @id @default(autoincrement())
+  name     String  @db.VarChar(100)
+  nameAz   String  @map("name_az") @db.VarChar(100)
+  region   String? @db.VarChar(100)
+
+  profiles Profile[]
+  dealers  Dealer[]
+  listings Listing[]
+
+  @@map("cities")
+}
+
+model Color {
+  id      Int    @id @default(autoincrement())
+  name    String @db.VarChar(100)
+  nameAz  String @map("name_az") @db.VarChar(100)
+  hexCode String @map("hex_code") @db.VarChar(7)
+
+  listings Listing[]
+
+  @@map("colors")
+}
+
+// ─── LISTINGS ───────────────────────────────────────────────
+
+model Listing {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @map("user_id") @db.Uuid
+  dealerId      String?       @map("dealer_id") @db.Uuid
+  brandId       Int           @map("brand_id")
+  modelId       Int           @map("model_id")
+  year          Int           @db.SmallInt
+  price         Decimal       @db.Decimal(12, 2)
+  currency      String        @default("AZN") @db.Char(3)
+  mileage       Int
+  fuelType      FuelType      @map("fuel_type")
+  transmission  Transmission
+  driveType     DriveType?    @map("drive_type")
+  bodyType      BodyType      @map("body_type")
+  colorId       Int?          @map("color_id")
+  engineVolume  Decimal?      @map("engine_volume") @db.Decimal(3, 1)
+  horsepower    Int?          @db.SmallInt
+  cityId        Int           @map("city_id")
+  description   String?       @db.Text
+  vin           String?       @db.VarChar(17)
+  status        ListingStatus @default(ACTIVE)
+  isFeatured    Boolean       @default(false) @map("is_featured")
+  featuredUntil DateTime?     @map("featured_until") @db.Timestamptz()
+  views         Int           @default(0)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user          User           @relation(fields: [userId], references: [id])
+  dealer        Dealer?        @relation(fields: [dealerId], references: [id])
+  brand         Brand          @relation(fields: [brandId], references: [id])
+  model         Model          @relation(fields: [modelId], references: [id])
+  color         Color?         @relation(fields: [colorId], references: [id])
+  city          City           @relation(fields: [cityId], references: [id])
+  images        ListingImage[]
+  savedBy       SavedListing[]
+  conversations Conversation[]
+  priceHistory  VinPriceHistory[]
+  boostRequests BoostRequest[]
+
+  // Active listings: sorted by featured first, then newest
+  @@index([status, isFeatured, createdAt(sort: Desc)])
+  // Filter queries: brand + model + year range
+  @@index([brandId, modelId, year])
+  // Price range search
+  @@index([status, price])
+  // City filter
+  @@index([status, cityId])
+  // User's own listings
+  @@index([userId, status, createdAt(sort: Desc)])
+  // Dealer listings
+  @@index([dealerId, status, createdAt(sort: Desc)])
+  // VIN lookup
+  @@index([vin])
+  @@map("listings")
+}
+
+model ListingImage {
+  id          String  @id @default(uuid()) @db.Uuid
+  listingId   String  @map("listing_id") @db.Uuid
+  urlOriginal String  @map("url_original") @db.VarChar(500)
+  urlThumb    String? @map("url_thumb") @db.VarChar(500)
+  urlMedium   String? @map("url_medium") @db.VarChar(500)
+  urlLarge    String? @map("url_large") @db.VarChar(500)
+  sortOrder   Int     @default(0) @map("sort_order") @db.SmallInt
+  isCover     Boolean @default(false) @map("is_cover")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, sortOrder])
+  @@map("listing_images")
+}
+
+model SavedListing {
+  userId    String   @map("user_id") @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([userId, listingId])
+  @@map("saved_listings")
+}
+
+// ─── VIN REGISTRY & FRAUD DETECTION ────────────────────────
+
+model VinRegistry {
+  vin           String   @id @db.Char(17)
+  firstSeenAt   DateTime @default(now()) @map("first_seen_at") @db.Timestamptz()
+  totalListings Int      @default(0) @map("total_listings")
+  totalOwners   Int      @default(0) @map("total_owners")
+  lastListedAt  DateTime? @map("last_listed_at") @db.Timestamptz()
+  fraudScore    Int      @default(0) @map("fraud_score") @db.SmallInt
+
+  listingHistory  VinListingHistory[]
+  priceHistory    VinPriceHistory[]
+  mileageHistory  VinMileageHistory[]
+  anomalies       VinOdometerAnomaly[]
+
+  @@map("vin_registry")
+}
+
+model VinListingHistory {
+  id           String       @id @default(uuid()) @db.Uuid
+  vin          String       @db.Char(17)
+  listingId    String?      @map("listing_id") @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  dealerId     String?      @map("dealer_id") @db.Uuid
+  listedPrice  Decimal      @map("listed_price") @db.Decimal(12, 2)
+  listedMileage Int         @map("listed_mileage")
+  currency     String       @default("AZN") @db.Char(3)
+  listedAt     DateTime     @default(now()) @map("listed_at") @db.Timestamptz()
+  delistedAt   DateTime?    @map("delisted_at") @db.Timestamptz()
+  delistReason DelistReason? @map("delist_reason")
+  daysListed   Int?         @map("days_listed")
+  finalPrice   Decimal?     @map("final_price") @db.Decimal(12, 2)
+
+  vinRegistry VinRegistry @relation(fields: [vin], references: [vin])
+
+  @@index([vin, listedAt(sort: Desc)])
+  @@map("vin_listing_history")
+}
+
+model VinPriceHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  vin       String   @db.Char(17)
+  listingId String   @map("listing_id") @db.Uuid
+  oldPrice  Decimal  @map("old_price") @db.Decimal(12, 2)
+  newPrice  Decimal  @map("new_price") @db.Decimal(12, 2)
+  changePct Decimal  @map("change_pct") @db.Decimal(5, 2)
+  changedAt DateTime @default(now()) @map("changed_at") @db.Timestamptz()
+
+  vinRegistry VinRegistry @relation(fields: [vin], references: [vin])
+  listing     Listing     @relation(fields: [listingId], references: [id])
+
+  @@index([vin, changedAt(sort: Desc)])
+  @@map("vin_price_history")
+}
+
+model VinMileageHistory {
+  id              String       @id @default(uuid()) @db.Uuid
+  vin             String       @db.Char(17)
+  recordedMileage Int          @map("recorded_mileage")
+  recordedAt      DateTime     @default(now()) @map("recorded_at") @db.Timestamptz()
+  source          MileageSource
+  recordedByUserId String?     @map("recorded_by_user_id") @db.Uuid
+  notes           String?      @db.Text
+
+  vinRegistry VinRegistry @relation(fields: [vin], references: [vin])
+
+  @@index([vin, recordedAt(sort: Asc)])
+  @@map("vin_mileage_history")
+}
+
+model VinOdometerAnomaly {
+  id            String            @id @default(uuid()) @db.Uuid
+  vin           String            @db.Char(17)
+  anomalyType   AnomalyType       @map("anomaly_type")
+  expectedMin   Int?              @map("expected_min")
+  expectedMax   Int?              @map("expected_max")
+  reportedValue Int               @map("reported_value")
+  confidence    Int               @db.SmallInt
+  detectedAt    DateTime          @default(now()) @map("detected_at") @db.Timestamptz()
+  resolved      Boolean           @default(false)
+  resolution    AnomalyResolution?
+
+  vinRegistry VinRegistry @relation(fields: [vin], references: [vin])
+
+  @@index([vin])
+  @@map("vin_odometer_anomalies")
+}
+
+// ─── ACCOUNT FINGERPRINTING ────────────────────────────────
+
+model UserFingerprint {
+  id              String          @id @default(uuid()) @db.Uuid
+  userId          String          @map("user_id") @db.Uuid
+  fingerprintType FingerprintType @map("fingerprint_type")
+  fingerprintHash String          @map("fingerprint_hash") @db.VarChar(255)
+  firstSeenAt     DateTime        @default(now()) @map("first_seen_at") @db.Timestamptz()
+  lastSeenAt      DateTime        @default(now()) @map("last_seen_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([fingerprintHash])
+  @@map("user_fingerprints")
+}
+
+model AccountLink {
+  id         String          @id @default(uuid()) @db.Uuid
+  userIdA    String          @map("user_id_a") @db.Uuid
+  userIdB    String          @map("user_id_b") @db.Uuid
+  linkType   AccountLinkType @map("link_type")
+  confidence Int             @db.SmallInt
+  detectedAt DateTime        @default(now()) @map("detected_at") @db.Timestamptz()
+  reviewed   Boolean         @default(false)
+
+  userA User @relation("linkA", fields: [userIdA], references: [id])
+  userB User @relation("linkB", fields: [userIdB], references: [id])
+
+  @@map("account_links")
+}
+
+// ─── MESSAGING ──────────────────────────────────────────────
+
+model Conversation {
+  id           String    @id @default(uuid()) @db.Uuid
+  listingId    String    @map("listing_id") @db.Uuid
+  buyerId      String    @map("buyer_id") @db.Uuid
+  sellerId     String    @map("seller_id") @db.Uuid
+  lastMessageAt DateTime? @map("last_message_at") @db.Timestamptz()
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  listing  Listing   @relation(fields: [listingId], references: [id])
+  buyer    User      @relation("buyer", fields: [buyerId], references: [id])
+  seller   User      @relation("seller", fields: [sellerId], references: [id])
+  messages Message[]
+
+  @@unique([listingId, buyerId])
+  @@index([buyerId, lastMessageAt(sort: Desc)])
+  @@index([sellerId, lastMessageAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(uuid()) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  senderId       String      @map("sender_id") @db.Uuid
+  body           String      @db.Text
+  type           MessageType @default(TEXT)
+  isRead         Boolean     @default(false) @map("is_read")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@map("messages")
+}
+
+// ─── NOTIFICATIONS ──────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   @db.VarChar(50)
+  payload   Json     @default("{}")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ─── BOOST / FEATURED LISTINGS ──────────────────────────────
+
+enum BoostStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum BoostDuration {
+  DAYS_7
+  DAYS_14
+  DAYS_30
+}
+
+model BoostRequest {
+  id          String        @id @default(uuid()) @db.Uuid
+  listingId   String        @map("listing_id") @db.Uuid
+  userId      String        @map("user_id") @db.Uuid
+  duration    BoostDuration
+  status      BoostStatus   @default(PENDING)
+  amountAzn   Decimal       @map("amount_azn") @db.Decimal(8, 2)
+  paymentNote String?       @map("payment_note") @db.VarChar(500)
+  reviewedBy  String?       @map("reviewed_by") @db.Uuid
+  reviewedAt  DateTime?     @map("reviewed_at") @db.Timestamptz()
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("boost_requests")
+}
+
+// ─── SAVED SEARCHES ─────────────────────────────────────────
+
+model SavedSearch {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  filters      Json
+  name         String   @db.VarChar(200)
+  alertEnabled Boolean  @default(false) @map("alert_enabled")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_searches")
+}
