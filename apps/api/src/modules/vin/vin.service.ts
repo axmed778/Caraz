@@ -35,7 +35,7 @@ export class VinService {
 
     // Check: mileage cannot be below highest recorded
     const highestMileage = registry.mileageHistory.length > 0
-      ? Math.max(...registry.mileageHistory.map(m => m.recordedMileage))
+      ? Math.max(...registry.mileageHistory.map((m: any) => m.recordedMileage))
       : 0;
 
     if (mileage < highestMileage) {
@@ -45,7 +45,7 @@ export class VinService {
     }
 
     // Check: minimum relist gap for same user (3 days)
-    const userLastListing = registry.listingHistory.find(l => l.userId === userId);
+    const userLastListing = registry.listingHistory.find((l: any) => l.userId === userId);
     if (userLastListing?.delistedAt) {
       const daysSince = Math.floor(
         (Date.now() - userLastListing.delistedAt.getTime()) / (1000 * 60 * 60 * 24),
@@ -84,7 +84,7 @@ export class VinService {
       select: { userId: true },
       distinct: ['userId'],
     });
-    const ownerSet = new Set(distinctOwners.map(o => o.userId));
+    const ownerSet = new Set(distinctOwners.map((o: any) => o.userId));
     ownerSet.add(userId);
 
     await this.prisma.vinRegistry.update({
@@ -205,20 +205,20 @@ export class VinService {
     if (!registry) return null;
 
     const allPrices = [
-      ...registry.listingHistory.map(l => Number(l.listedPrice)),
-      ...registry.listingHistory.filter(l => l.finalPrice).map(l => Number(l.finalPrice!)),
+      ...registry.listingHistory.map((l: any) => Number(l.listedPrice)),
+      ...registry.listingHistory.filter((l: any) => l.finalPrice).map((l: any) => Number(l.finalPrice!)),
     ];
 
-    const allMileages = registry.mileageHistory.map(m => m.recordedMileage);
+    const allMileages = registry.mileageHistory.map((m: any) => m.recordedMileage);
 
     return {
       vin: registry.vin,
       totalListings: registry.totalListings,
-      totalDaysOnMarket: registry.listingHistory.reduce((sum, l) => sum + (l.daysListed || 0), 0),
+      totalDaysOnMarket: registry.listingHistory.reduce((sum: number, l: any) => sum + (l.daysListed || 0), 0),
       lowestPrice: allPrices.length > 0 ? Math.min(...allPrices) : null,
       highestRecordedMileage: allMileages.length > 0 ? Math.max(...allMileages) : null,
-      hasRollbackAnomaly: registry.anomalies.some(a => a.anomalyType === 'ROLLBACK_DETECTED'),
-      listings: registry.listingHistory.map(l => ({
+      hasRollbackAnomaly: registry.anomalies.some((a: any) => a.anomalyType === 'ROLLBACK_DETECTED'),
+      listings: registry.listingHistory.map((l: any) => ({
         listedPrice: Number(l.listedPrice),
         finalPrice: l.finalPrice ? Number(l.finalPrice) : null,
         listedMileage: l.listedMileage,
@@ -227,7 +227,7 @@ export class VinService {
         daysListed: l.daysListed,
         isCurrentListing: !l.delistedAt,
       })),
-      mileageTimeline: registry.mileageHistory.map(m => ({
+      mileageTimeline: registry.mileageHistory.map((m: any) => ({
         recordedMileage: m.recordedMileage,
         recordedAt: m.recordedAt.toISOString(),
         source: m.source,
@@ -250,17 +250,17 @@ export class VinService {
     let score = 0;
 
     // Multiple distinct owners
-    const distinctOwners = new Set(registry.listingHistory.map(l => l.userId)).size;
+    const distinctOwners = new Set(registry.listingHistory.map((l: any) => l.userId)).size;
     if (distinctOwners >= 2) score += 20;
     if (distinctOwners >= 3) score += 20;
 
     // Odometer anomalies
-    const rollbacks = registry.anomalies.filter(a => a.anomalyType === 'ROLLBACK_DETECTED');
+    const rollbacks = registry.anomalies.filter((a: any) => a.anomalyType === 'ROLLBACK_DETECTED');
     score += rollbacks.length * 30;
 
     // Many price drops
     const priceDrops = registry.listingHistory.filter(
-      l => l.finalPrice && Number(l.finalPrice) < Number(l.listedPrice),
+      (l: any) => l.finalPrice && Number(l.finalPrice) < Number(l.listedPrice),
     );
     if (priceDrops.length >= 2) score += 15;
 
