@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@caraz/database';
+import { Prisma } from '@prisma/client';
 
 export interface SearchFilters {
   brandId?: number;
@@ -92,7 +92,7 @@ export class SearchService {
     ]);
 
     return {
-      items: items.map(l => ({
+      items: items.map((l: any) => ({
         id: l.id,
         price: Number(l.price),
         currency: l.currency,
@@ -129,7 +129,7 @@ export class SearchService {
       orderBy: { _count: { id: 'desc' } },
     });
 
-    return { brands: brandCounts.map(b => ({ brandId: b.brandId, count: b._count.id })) };
+    return { brands: brandCounts.map((b: any) => ({ brandId: b.brandId, count: b._count.id })) };
   }
 
   private resolveOrderBy(sortBy?: string): Prisma.ListingOrderByWithRelationInput[] {

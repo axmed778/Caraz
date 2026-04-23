@@ -41,7 +41,7 @@ export class AdminService {
     ]);
 
     return {
-      items: items.map((u) => ({
+      items: items.map((u: any) => ({
         id: u.id,
         email: u.email,
         phone: u.phone,
@@ -118,7 +118,7 @@ export class AdminService {
     ]);
 
     return {
-      items: items.map((l) => ({
+      items: items.map((l: any) => ({
         id: l.id,
         brandName: l.brand.name,
         modelName: l.model.name,
@@ -197,7 +197,7 @@ export class AdminService {
     ]);
 
     return {
-      items: items.map((d) => ({
+      items: items.map((d: any) => ({
         id: d.id,
         name: d.name,
         isVerified: d.isVerified,
@@ -243,7 +243,7 @@ export class AdminService {
     ]);
 
     return {
-      items: items.map((a) => ({
+      items: items.map((a: any) => ({
         id: a.id,
         vin: a.vin,
         anomalyType: a.anomalyType,

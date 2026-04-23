@@ -32,19 +32,19 @@ export class AnalyticsService {
     ]);
 
     // Resolve brand names
-    const brandIds = topBrands.map((b) => b.brandId);
+    const brandIds = topBrands.map((b: any) => b.brandId);
     const brands = await this.prisma.brand.findMany({
       where: { id: { in: brandIds } },
       select: { id: true, name: true },
     });
-    const brandMap = Object.fromEntries(brands.map((b) => [b.id, b.name]));
+    const brandMap = Object.fromEntries(brands.map((b: any) => [b.id, b.name]));
 
     return {
       totalActiveListings,
       totalBrands,
       verifiedDealers: totalDealers,
       newListingsLast7Days: recentListingsCount,
-      topBrands: topBrands.map((b) => ({
+      topBrands: topBrands.map((b: any) => ({
         brandId: b.brandId,
         brandName: brandMap[b.brandId] || null,
         listingCount: b._count.id,

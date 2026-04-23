@@ -36,7 +36,7 @@ export class NotificationsService {
     ]);
 
     return {
-      items: items.map((n) => ({
+      items: items.map((n: any) => ({
         id: n.id,
         type: n.type,
         payload: n.payload,

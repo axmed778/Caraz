@@ -1,6 +1,6 @@
 import { IsUUID, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BoostDuration } from '@caraz/database';
+import { BoostDuration } from '@prisma/client';
 
 export class RequestBoostDto {
   @ApiProperty()

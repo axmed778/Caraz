@@ -61,8 +61,8 @@ export class FavoritesService {
 
     return {
       items: items
-        .filter((s) => s.listing.status !== 'DELETED')
-        .map((s) => ({
+        .filter((s: any) => s.listing.status !== 'DELETED')
+        .map((s: any) => ({
           savedAt: s.createdAt.toISOString(),
           listing: {
             id: s.listing.id,

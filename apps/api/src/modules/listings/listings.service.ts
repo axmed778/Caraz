@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma } from '@caraz/database';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { VinService } from '../vin/vin.service';
 import { CreateListingBodyDto, UpdateListingBodyDto, ListingQueryDto } from './listings.dto';

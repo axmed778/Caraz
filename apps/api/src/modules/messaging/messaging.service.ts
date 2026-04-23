@@ -150,7 +150,7 @@ export class MessagingService {
     ]);
 
     return {
-      items: items.map((c) => {
+      items: items.map((c: any) => {
         const lastMsg = c.messages[0];
         const unreadCount = 0; // Will be populated below if needed
         const otherParty = c.buyerId === userId ? c.seller : c.buyer;

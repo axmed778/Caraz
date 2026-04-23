@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { DelistReason, MileageSource } from '@caraz/database';
+import type { DelistReason, MileageSource } from '@prisma/client';
 
 @Injectable()
 export class VinService {

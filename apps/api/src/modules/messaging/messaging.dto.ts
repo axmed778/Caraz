@@ -1,6 +1,6 @@
 import { IsString, IsUUID, IsNotEmpty, MaxLength, IsOptional, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MessageType } from '@caraz/database';
+import { MessageType } from '@prisma/client';
 
 export class StartConversationDto {
   @ApiProperty()
