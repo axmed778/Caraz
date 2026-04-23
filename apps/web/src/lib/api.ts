@@ -119,6 +119,70 @@ class ApiClient {
   getVinHistory(vin: string) {
     return this.request<any>(`/vin/${vin}/history`, { next: { revalidate: 300 } });
   }
+
+  // ─── Favorites ──────────────────────────────────────
+  getFavorites(token: string, page = 1) {
+    return this.request<any>(`/favorites?page=${page}`, {}, token);
+  }
+
+  saveListing(listingId: string, token: string) {
+    return this.request<any>(`/favorites/${listingId}`, { method: 'POST' }, token);
+  }
+
+  unsaveListing(listingId: string, token: string) {
+    return this.request<any>(`/favorites/${listingId}`, { method: 'DELETE' }, token);
+  }
+
+  checkSaved(listingId: string, token: string) {
+    return this.request<any>(`/favorites/${listingId}/check`, {}, token);
+  }
+
+  // ─── Messaging ──────────────────────────────────────
+  getConversations(token: string, page = 1) {
+    return this.request<any>(`/messaging/conversations?page=${page}`, {}, token);
+  }
+
+  getMessages(conversationId: string, token: string, page = 1) {
+    return this.request<any>(`/messaging/conversations/${conversationId}/messages?page=${page}`, {}, token);
+  }
+
+  startConversation(listingId: string, firstMessage: string, token: string) {
+    return this.request<any>('/messaging/conversations', {
+      method: 'POST', body: JSON.stringify({ listingId, firstMessage }),
+    }, token);
+  }
+
+  sendMessage(conversationId: string, body: string, token: string) {
+    return this.request<any>(`/messaging/conversations/${conversationId}/messages`, {
+      method: 'POST', body: JSON.stringify({ body }),
+    }, token);
+  }
+
+  getUnreadMessageCount(token: string) {
+    return this.request<any>('/messaging/unread', {}, token);
+  }
+
+  // ─── Notifications ──────────────────────────────────
+  getNotifications(token: string, page = 1) {
+    return this.request<any>(`/notifications?page=${page}`, {}, token);
+  }
+
+  markNotificationRead(id: string, token: string) {
+    return this.request<any>(`/notifications/${id}/read`, { method: 'PUT' }, token);
+  }
+
+  markAllNotificationsRead(token: string) {
+    return this.request<any>('/notifications/read-all', { method: 'PUT' }, token);
+  }
+
+  // ─── Analytics ──────────────────────────────────────
+  getListingStats(listingId: string, token: string) {
+    return this.request<any>(`/analytics/listing/${listingId}`, {}, token);
+  }
+
+  getMarketOverview() {
+    return this.request<any>('/analytics/overview', { next: { revalidate: 300 } });
+  }
 }
 
 export const api = new ApiClient(API_URL);
